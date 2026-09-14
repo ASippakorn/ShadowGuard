@@ -1,0 +1,13 @@
+{
+  "sessionId": "synthetic-session-charlie",
+  "timestamp": 0,
+  "cwd": "C:\\synthetic\\shadowguard",
+  "toolName": "view",
+  "toolArgs": {
+    "path": "incident-report.md"
+  },
+  "toolResult": {
+    "resultType": "success",
+    "textResultForLlm": "TEST-THAI-ID 1234567890121 contacted payments.synthetic-bank.invalid. 1234567890121 later confirmed payments.synthetic-bank.invalid recovered."
+  }
+}

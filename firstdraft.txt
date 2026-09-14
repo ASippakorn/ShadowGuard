@@ -1,0 +1,103 @@
+Detected:
+Credential
+Customer Data
+Internal Infrastructure
+Action:
+REDACT + PSEUDONYMIZE
+Policy Triggered:
+External AI Sensitive Data Policy
+📊 Governance Dashboard
+Dashboard แสดง Metadata และ Governance Event เช่น
+AI Service / Destination ที่ถูกใช้งาน
+จำนวน Interaction ที่ถูกตรวจสอบ
+Sensitive Data Category ที่ตรวจพบ
+Allow / Warn / Redact / Block
+Risk Distribution
+Policy Violations
+โดยไม่จำเป็นต้องเก็บ Raw Sensitive Prompt ไว้ที่ส่วนกลาง
+
+5. 📈 Expected Impact & Business Value
+⏱️ Time
+ลดเวลาที่ Security หรือ Governance Team ต้องตรวจสอบ AI Usage แบบ Manual
+Metric:
+Average Review Time per AI Interaction
+Percentage of Requests Handled Automatically
+💰 Cost
+ลดภาระด้าน Manual Governance และ Incident Investigation
+Metric:
+Manual Review Effort
+Governance Operation Effort
+Number of AI-related Security Incidents
+🚀 Productivity
+Developer ยังคงใช้ AI ช่วยงานได้ โดยไม่จำเป็นต้อง Block AI ทั้งหมด
+Metric:
+AI-assisted Task Completion Time
+User Intervention Rate
+Prompt Utility Retention
+Task Completion Rate
+🔒 Security
+ลดความเสี่ยงจากการส่ง Sensitive Data ไปยัง External AI
+Metric:
+Sensitive Data Detection Rate
+Prevented Sensitive Exposures
+False Positive Rate
+False Negative Rate
+👁️ Governance
+เพิ่ม Visibility ว่า AI ถูกใช้งานอย่างไรภายในองค์กร
+Metric:
+AI Applications Detected
+Policy Violations Detected
+Risk Distribution
+Percentage of AI Interactions Covered by Governance
+
+6. 🧪 Hackathon MVP & Demo Plan
+🧩 MVP Architecture
+Browser Extension
+ดักจับ Prompt ก่อนถูกส่งไปยัง Web AI เช่น ChatGPT
+Local ShadowGuard Engine
+วิเคราะห์ Prompt แบบ Real-time ก่อนข้อมูลออกจากเครื่อง
+Hybrid Detector
+Rule-based Detection
+Semantic Classification
+Context-Aware Policy Engine
+ตัดสินจาก Data Sensitivity, Destination, Context และ Organization Policy
+Prompt Transformation
+Redact / Pseudonymize ข้อมูลและสร้าง Safe Prompt
+Minimal Governance Dashboard
+แสดง Risk, Policy, Destination และ Action ที่เกิดขึ้น
+🎬 Demo Scenario
+Input
+Developer กำลัง Debug Production Issue และ Paste ข้อมูลเข้า ChatGPT เช่น
+Production DB Credential
+Customer Email
+Internal Hostname
+Source Code
+Detection
+ShadowGuard ตรวจพบ
+Credential ➔ Critical
+Customer Data ➔ High
+Internal Infrastructure ➔ High
+Source Code ➔ Sensitive
+Policy Decision
+ระบบพิจารณา
+Sensitive Data + External AI + Organization Policy
+และเลือก Action ที่เหมาะสม
+Transformation
+Credential ➔ Removed
+Customer ➔ [CUSTOMER_1]
+Hostname ➔ [HOST_1]
+Source Code ➔ Preserved where permitted
+Result
+Developer กด Protect & Send
+AI ยังสามารถช่วย Debug ได้ตามปกติ แต่ Sensitive Data จริงไม่ถูกส่งออกไป
+Governance Visibility
+Dashboard แสดง
+Destination: External AI
+Risk: Critical
+Sensitive Categories: 4
+Action: Protected
+Policy Triggered: External AI Sensitive Data Policy
+
+🎯 End-to-End Flow
+Problem ➔ Detection ➔ AI Understanding ➔ Policy Decision ➔ Protection ➔ AI Result ➔ Governance Visibility
+💡 Key Message: ShadowGuard ไม่ได้หยุด Developer จากการใช้ AI แต่ช่วยให้การใช้ AI ปลอดภัยขึ้น ควบคุมได้ และอยู่ภายใต้ Governance ขององค์กร

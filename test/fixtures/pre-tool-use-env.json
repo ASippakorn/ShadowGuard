@@ -1,0 +1,9 @@
+{
+  "sessionId": "synthetic-session-bravo",
+  "timestamp": 0,
+  "cwd": "C:\\synthetic\\shadowguard",
+  "toolName": "view",
+  "toolArgs": {
+    "path": ".\\demo\\.env"
+  }
+}

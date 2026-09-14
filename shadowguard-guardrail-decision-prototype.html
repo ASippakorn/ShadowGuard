@@ -1,0 +1,1289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShadowGuard Guardrail Decision — Throwaway Logic Prototype</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17211f;
+      --muted: #5d6b67;
+      --paper: #f7f7f2;
+      --card: #ffffff;
+      --line: #d9dfdb;
+      --accent: #087f5b;
+      --accent-soft: #e5f5ef;
+      --warn: #9a6700;
+      --warn-soft: #fff4ce;
+      --danger: #b42318;
+      --danger-soft: #feeceb;
+      --blue: #175cd3;
+      --blue-soft: #eaf2ff;
+      --shadow: 0 12px 34px rgba(30, 47, 42, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    button { font: inherit; }
+
+    .wrap {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .prototype-ribbon {
+      background: #17211f;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 760;
+      letter-spacing: 0.12em;
+      padding: 9px 16px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    header { padding: 54px 0 30px; }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      margin: 0 0 10px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 4.1rem);
+      letter-spacing: -0.055em;
+      line-height: 0.98;
+      margin: 0;
+      max-width: 900px;
+    }
+
+    .question {
+      border-left: 4px solid var(--accent);
+      color: #31413d;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      margin: 24px 0 0;
+      max-width: 920px;
+      padding: 3px 0 3px 18px;
+    }
+
+    .question strong { color: var(--ink); }
+
+    .scope-note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 18px 0 0;
+      max-width: 900px;
+    }
+
+    main { padding-bottom: 70px; }
+
+    .section-title {
+      align-items: baseline;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      justify-content: space-between;
+      margin: 34px 0 14px;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      letter-spacing: -0.025em;
+      margin: 0;
+    }
+
+    .section-note {
+      color: var(--muted);
+      font-size: 0.86rem;
+      margin: 0;
+    }
+
+    .status-strip {
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 16px;
+      grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(120px, 1fr));
+      padding: 18px;
+    }
+
+    .status-lead strong,
+    .metric strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .status-lead span,
+    .metric span {
+      color: var(--muted);
+      display: block;
+      font-size: 0.78rem;
+      margin-top: 3px;
+    }
+
+    .metric {
+      border-left: 1px solid var(--line);
+      padding-left: 16px;
+    }
+
+    .pass { color: var(--accent) !important; }
+    .pending { color: var(--muted) !important; }
+    .fail { color: var(--danger) !important; }
+
+    .state-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+      padding: 20px;
+    }
+
+    .card.wide { grid-column: 1 / -1; }
+
+    .card h3 {
+      font-size: 0.95rem;
+      letter-spacing: -0.01em;
+      margin: 0 0 14px;
+    }
+
+    .definition-grid {
+      display: grid;
+      gap: 10px 18px;
+      grid-template-columns: minmax(130px, 0.65fr) minmax(0, 1.6fr);
+      margin: 0;
+    }
+
+    .definition-grid dt {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .definition-grid dd {
+      font-size: 0.88rem;
+      margin: 0;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .pill {
+      background: #eef1ef;
+      border-radius: 999px;
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 760;
+      margin: 0 5px 5px 0;
+      padding: 4px 9px;
+      white-space: nowrap;
+    }
+
+    .pill.allow, .pill.green { background: var(--accent-soft); color: #096847; }
+    .pill.transform, .pill.yellow { background: var(--warn-soft); color: #73510b; }
+    .pill.review, .pill.orange { background: var(--blue-soft); color: var(--blue); }
+    .pill.block, .pill.red, .pill.coverage_gap { background: var(--danger-soft); color: var(--danger); }
+
+    .content-box {
+      background: #f4f6f4;
+      border: 1px solid #e0e5e1;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.79rem;
+      margin: 8px 0 0;
+      max-height: 185px;
+      min-height: 68px;
+      overflow: auto;
+      padding: 12px;
+      white-space: pre-wrap;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-family: inherit;
+      font-style: italic;
+    }
+
+    .notice {
+      background: var(--accent-soft);
+      border-radius: 10px;
+      color: #135c47;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      padding: 10px 12px;
+    }
+
+    .notice.warn { background: var(--warn-soft); color: #76550d; }
+    .notice.danger { background: var(--danger-soft); color: #8d221b; }
+    .notice.blue { background: var(--blue-soft); color: #174ea6; }
+
+    .findings {
+      display: grid;
+      gap: 9px;
+    }
+
+    .finding {
+      align-items: start;
+      background: #f7f8f7;
+      border: 1px solid #e3e7e4;
+      border-radius: 10px;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr auto;
+      padding: 10px 12px;
+    }
+
+    .finding strong { font-size: 0.84rem; }
+    .finding small { color: var(--muted); display: block; margin-top: 2px; }
+
+    .capabilities {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, 1fr);
+      margin: 10px 0 14px;
+    }
+
+    .capability {
+      background: #f5f6f5;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      font-size: 0.77rem;
+      padding: 9px;
+      text-align: center;
+    }
+
+    .capability.yes { background: var(--accent-soft); border-color: #b6dece; }
+    .capability.no { color: var(--muted); text-decoration: line-through; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .button {
+      background: var(--card);
+      border: 1px solid #bfc8c3;
+      border-radius: 9px;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 720;
+      padding: 10px 13px;
+    }
+
+    .button:hover { border-color: var(--accent); color: var(--accent); }
+    .button:focus-visible { outline: 3px solid #72c7a8; outline-offset: 2px; }
+    .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .button.secondary { background: var(--accent-soft); border-color: #badfce; color: #116249; }
+    .button.danger { background: var(--danger-soft); border-color: #f5c6c2; color: var(--danger); }
+    .button[disabled] { cursor: not-allowed; opacity: 0.45; }
+
+    .action-group {
+      border-top: 1px solid var(--line);
+      margin-top: 16px;
+      padding-top: 15px;
+    }
+
+    .action-group:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+
+    .action-group h4 {
+      color: var(--muted);
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      margin: 0 0 9px;
+      text-transform: uppercase;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .tab {
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--muted);
+      cursor: pointer;
+      flex: 0 0 auto;
+      font-size: 0.8rem;
+      font-weight: 720;
+      padding: 9px 12px;
+    }
+
+    .tab[aria-selected="true"] { background: #17211f; border-color: #17211f; color: #fff; }
+
+    .walkthrough {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      margin-top: 10px;
+      padding: 22px;
+    }
+
+    .walkthrough h3 { margin: 0 0 6px; }
+    .walkthrough > p { color: var(--muted); font-size: 0.88rem; margin: 0 0 18px; max-width: 800px; }
+
+    .steps {
+      counter-reset: walkthrough;
+      display: grid;
+      gap: 9px;
+    }
+
+    .step {
+      align-items: center;
+      background: #f7f8f7;
+      border: 1px solid #e1e5e2;
+      border-radius: 10px;
+      counter-increment: walkthrough;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      padding: 10px 11px;
+    }
+
+    .step::before {
+      align-items: center;
+      background: #e8ece9;
+      border-radius: 50%;
+      content: counter(walkthrough);
+      display: flex;
+      font-size: 0.76rem;
+      font-weight: 800;
+      height: 28px;
+      justify-content: center;
+      width: 28px;
+    }
+
+    .step.done { background: var(--accent-soft); border-color: #b6dece; }
+    .step.done::before { background: var(--accent); color: #fff; content: "✓"; }
+    .step span { font-size: 0.84rem; }
+
+    .event-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .event-list li {
+      align-items: center;
+      background: #f7f8f7;
+      border: 1px solid #e3e7e4;
+      border-radius: 9px;
+      display: grid;
+      font-size: 0.78rem;
+      gap: 8px;
+      grid-template-columns: 74px 1fr auto;
+      list-style: none;
+      padding: 9px 11px;
+    }
+
+    .event-list time { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 28px;
+      text-align: center;
+    }
+
+    @media (max-width: 850px) {
+      .status-strip { grid-template-columns: repeat(2, 1fr); }
+      .status-lead { grid-column: 1 / -1; }
+      .metric { border-left: 0; border-top: 1px solid var(--line); padding: 12px 0 0; }
+    }
+
+    @media (max-width: 680px) {
+      .wrap { width: min(100% - 20px, 1180px); }
+      header { padding-top: 36px; }
+      .state-grid { grid-template-columns: 1fr; }
+      .card.wide { grid-column: auto; }
+      .definition-grid { grid-template-columns: 1fr; gap: 2px; }
+      .definition-grid dd { margin-bottom: 9px; }
+      .capabilities { grid-template-columns: 1fr; }
+      .step { grid-template-columns: 28px 1fr; }
+      .step button { grid-column: 1 / -1; width: 100%; }
+      .event-list li { grid-template-columns: 1fr auto; }
+      .event-list time { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="prototype-ribbon">Throwaway prototype · synthetic data only · no live integration</div>
+
+  <header class="wrap">
+    <p class="eyebrow">ShadowGuard · Guardrail Decision model</p>
+    <h1>Drive the protection model, checkpoint by checkpoint.</h1>
+    <p class="question"><strong>Question:</strong> Does the Guardrail Decision model behave coherently across the three Context Egress checkpoints and integration capability fallbacks?</p>
+    <p class="scope-note">This single-file demo explores in-memory decisions only. It does not connect to Copilot, read real files, persist events, provide a dashboard, or represent production code.</p>
+  </header>
+
+  <main class="wrap">
+    <div class="section-title">
+      <h2>Live answer</h2>
+      <p class="section-note">Each claim turns green only after you prove it by driving the model.</p>
+    </div>
+    <section class="status-strip" id="validation-strip" aria-live="polite"></section>
+
+    <div class="section-title">
+      <h2>Full current state</h2>
+      <p class="section-note">Re-rendered after every action. Synthetic raw input stays visible here so you can compare before and after.</p>
+    </div>
+    <section class="state-grid" id="state-grid" aria-live="polite"></section>
+
+    <div class="section-title">
+      <h2>Free play</h2>
+      <p class="section-note">Load any situation, alter the integration's powers, then move the decision forward.</p>
+    </div>
+    <section class="card" id="free-play"></section>
+
+    <div class="section-title">
+      <h2>Guided walkthroughs</h2>
+      <p class="section-note">Each walkthrough resets to a known state and uses the same actions as free play.</p>
+    </div>
+    <nav class="tabs" id="walkthrough-tabs" role="tablist" aria-label="Guided walkthroughs"></nav>
+    <section class="walkthrough" id="walkthrough-panel" role="tabpanel"></section>
+
+    <div class="section-title">
+      <h2>Metadata-only evidence</h2>
+      <p class="section-note">Events deliberately omit input, output, detected values, and placeholder mappings.</p>
+    </div>
+    <section class="card" id="event-log"></section>
+
+    <p class="footer-note">Prototype boundary: logic exploration only. Dispose of this page after the decision is absorbed into real implementation work.</p>
+  </main>
+
+  <!--
+    PURE LOGIC MODULE
+    -----------------
+    This block has no DOM access, storage, network, clocks, or vendor hooks.
+    Given state and an action, it returns new state. The page shell below only
+    dispatches actions and renders the result.
+  -->
+  <script>
+    const GuardrailDecisionModel = (() => {
+      "use strict";
+
+      const CHECKPOINTS = Object.freeze({
+        content_before_model: "Content before model",
+        action_before_execute: "Action before execute",
+        result_before_model: "Result before model"
+      });
+
+      const CAPABILITY_PROFILES = Object.freeze({
+        promptHook: {
+          label: "Prompt hook · transform only",
+          canTransform: true,
+          canBlock: false,
+          canReviewInteractively: false
+        },
+        preToolHook: {
+          label: "Pre-tool hook · block and review",
+          canTransform: true,
+          canBlock: true,
+          canReviewInteractively: true
+        },
+        postToolHook: {
+          label: "Successful-result hook · transform only",
+          canTransform: true,
+          canBlock: false,
+          canReviewInteractively: false
+        },
+        controlledClient: {
+          label: "Controlled client · all capabilities",
+          canTransform: true,
+          canBlock: true,
+          canReviewInteractively: true
+        },
+        observeOnly: {
+          label: "Observe only · no enforcement",
+          canTransform: false,
+          canBlock: false,
+          canReviewInteractively: false
+        }
+      });
+
+      const SCENARIOS = Object.freeze({
+        promptCredential: {
+          label: "Prompt with synthetic credential",
+          checkpoint: "content_before_model",
+          targetKind: "prompt",
+          source: "Developer submission",
+          capabilityProfile: "promptHook",
+          content: "Investigate TEST incident SG-101. Use API token sk-test-shadowguard-EXAMPLE-7H3K9P2M. Canary SG_PROMPT_CANARY_ALPHA.",
+          executionStatus: "not applicable"
+        },
+        cleanPrompt: {
+          label: "Clean prompt",
+          checkpoint: "content_before_model",
+          targetKind: "prompt",
+          source: "Developer submission",
+          capabilityProfile: "promptHook",
+          content: "Summarize the synthetic incident timeline and propose next steps.",
+          executionStatus: "not applicable"
+        },
+        incidentResult: {
+          label: "Successful incident-report result",
+          checkpoint: "result_before_model",
+          targetKind: "tool_result",
+          source: "Successful read of incident-report.md",
+          capabilityProfile: "postToolHook",
+          content: "SYNTHETIC TEST RECORD\nResponder TEST-THAI-ID 1234567890121 contacted payments.synthetic-bank.invalid.\nLater, 1234567890121 confirmed payments.synthetic-bank.invalid recovered.\nCanary SG_RESULT_CANARY_BRAVO.",
+          executionStatus: "succeeded before result inspection"
+        },
+        envRetrieval: {
+          label: "Restricted .env retrieval",
+          checkpoint: "action_before_execute",
+          targetKind: "path",
+          source: "Proposed workspace file read",
+          capabilityProfile: "preToolHook",
+          content: "./demo/.env",
+          executionStatus: "planned; not executed"
+        },
+        ambiguousIdentifier: {
+          label: "Ambiguous internal identifier",
+          checkpoint: "content_before_model",
+          targetKind: "prompt",
+          source: "Developer submission",
+          capabilityProfile: "promptHook",
+          content: "Check synthetic internal reference INT-TEST-4821 in the incident notes.",
+          executionStatus: "not applicable"
+        }
+      });
+
+      const WALKTHROUGHS = Object.freeze({
+        prompt: {
+          shortLabel: "1 · Prompt credential",
+          title: "Credential is sanitized automatically before model exposure",
+          description: "The prompt checkpoint can transform but cannot pause or block. Watch the credential become a generic, non-linkable placeholder while the useful incident request remains.",
+          steps: [
+            ["Stage the raw prompt", { type: "STAGE_SCENARIO", scenarioId: "promptCredential" }],
+            ["Inspect at content before model", { type: "INSPECT" }],
+            ["Apply the Guardrail Decision", { type: "APPLY_DECISION" }],
+            ["Release the protected prompt", { type: "CONTINUE_FLOW" }]
+          ]
+        },
+        result: {
+          shortLabel: "2 · Tool result",
+          title: "A successful tool result keeps repeated relationships intact",
+          description: "The file read has already succeeded locally. Before its result becomes model-facing, repeated synthetic person and hostname values receive the same semantic placeholders.",
+          steps: [
+            ["Stage the successful read result", { type: "STAGE_SCENARIO", scenarioId: "incidentResult" }],
+            ["Inspect at result before model", { type: "INSPECT" }],
+            ["Apply stable replacements", { type: "APPLY_DECISION" }],
+            ["Release the sanitized result", { type: "CONTINUE_FLOW" }]
+          ]
+        },
+        restricted: {
+          shortLabel: "3 · Restricted .env",
+          title: "Restricted retrieval is denied before execution",
+          description: "This is an upstream Context Egress control, not general command security. The proposed read is blocked because its result was intended for model context.",
+          steps: [
+            ["Stage the proposed .env read", { type: "STAGE_SCENARIO", scenarioId: "envRetrieval" }],
+            ["Inspect before tool execution", { type: "INSPECT" }],
+            ["Apply the block decision", { type: "APPLY_DECISION" }],
+            ["Try to continue the read", { type: "CONTINUE_FLOW" }]
+          ]
+        },
+        fallback: {
+          shortLabel: "4 · Review fallback",
+          title: "Unavailable review falls back safely instead of allowing",
+          description: "Policy asks for review of an ambiguous identifier, but the prompt hook cannot pause. Its configured safe default is transform, which the integration can enforce.",
+          steps: [
+            ["Stage the ambiguous prompt", { type: "STAGE_SCENARIO", scenarioId: "ambiguousIdentifier" }],
+            ["Inspect and request review", { type: "INSPECT" }],
+            ["Apply the enforceable fallback", { type: "APPLY_DECISION" }],
+            ["Release only transformed context", { type: "CONTINUE_FLOW" }]
+          ]
+        }
+      });
+
+      const initialValidation = () => ({
+        promptCredentialSanitized: false,
+        stableResultPlaceholders: false,
+        restrictedRetrievalBlocked: false,
+        reviewDidNotDowngradeToAllow: false,
+        contradictionFound: false
+      });
+
+      const initialState = () => ({
+        revision: 0,
+        phase: "idle",
+        scenarioId: null,
+        checkpoint: null,
+        targetKind: null,
+        source: null,
+        input: null,
+        modelBoundOutput: null,
+        capabilities: null,
+        findings: [],
+        policyIntent: null,
+        finalDecision: null,
+        safeDefault: null,
+        fallbackReason: null,
+        reasonCode: null,
+        executionStatus: "nothing planned",
+        egressStatus: "nothing released",
+        receipt: null,
+        currentEvent: null,
+        events: [],
+        lastAction: "Prototype ready. Choose a walkthrough or stage a free-play situation.",
+        validation: initialValidation()
+      });
+
+      const clone = (value) => JSON.parse(JSON.stringify(value));
+
+      const fingerprint = (category, value) => {
+        const text = `THROWAWAY-LOCAL-KEY|${category}|${value}`;
+        let hash = 2166136261;
+        for (let index = 0; index < text.length; index += 1) {
+          hash ^= text.charCodeAt(index);
+          hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0).toString(16).toUpperCase().padStart(8, "0").slice(0, 4);
+      };
+
+      const semanticPlaceholder = (category, value) => `[${category}_${fingerprint(category, value)}]`;
+
+      const findMatches = (text, pattern, category, riskTier, policyRuleId, replacementFor) => {
+        const matches = [];
+        for (const match of text.matchAll(pattern)) {
+          matches.push({
+            category,
+            riskTier,
+            confidence: "high",
+            policyRuleId,
+            value: match[0],
+            start: match.index,
+            end: match.index + match[0].length,
+            replacement: replacementFor(match[0])
+          });
+        }
+        return matches;
+      };
+
+      const inspectScenario = (state) => {
+        const text = state.input || "";
+        let findings = [];
+
+        if (state.checkpoint === "action_before_execute" && /(^|[\\/])\.env$/i.test(text)) {
+          findings.push({
+            category: "restricted_secret_file",
+            riskTier: "red",
+            confidence: "high",
+            policyRuleId: "restricted.secret_files",
+            value: text,
+            start: 0,
+            end: text.length,
+            replacement: null
+          });
+        }
+
+        if (state.checkpoint !== "action_before_execute") {
+          findings = findings.concat(findMatches(
+            text,
+            /sk-test-shadowguard-[A-Za-z0-9-]+/g,
+            "credential",
+            "red",
+            "secret.credentials",
+            () => "[SECRET_REDACTED]"
+          ));
+          findings = findings.concat(findMatches(
+            text,
+            /1234567890121/g,
+            "person_identifier",
+            "yellow",
+            "personal.identifiers",
+            (value) => semanticPlaceholder("PERSON", value)
+          ));
+          findings = findings.concat(findMatches(
+            text,
+            /payments\.synthetic-bank\.invalid/g,
+            "internal_hostname",
+            "yellow",
+            "internal.infrastructure",
+            (value) => semanticPlaceholder("INTERNAL_HOST", value)
+          ));
+          findings = findings.concat(findMatches(
+            text,
+            /INT-TEST-\d{4}/g,
+            "ambiguous_internal_identifier",
+            "orange",
+            "internal.ambiguous",
+            (value) => semanticPlaceholder("INTERNAL_REF", value)
+          ));
+        }
+
+        findings.sort((a, b) => a.start - b.start);
+
+        if (!findings.length) {
+          return { findings, policyIntent: "allow", safeDefault: null, reasonCode: null };
+        }
+        if (findings.some((finding) => finding.category === "restricted_secret_file")) {
+          return { findings, policyIntent: "block", safeDefault: null, reasonCode: "restricted_source_for_model_context" };
+        }
+        if (findings.some((finding) => finding.riskTier === "orange")) {
+          return { findings, policyIntent: "review", safeDefault: "transform", reasonCode: "ambiguous_identifier_requires_review" };
+        }
+        return { findings, policyIntent: "transform", safeDefault: null, reasonCode: "sensitive_context_detected" };
+      };
+
+      const chooseEnforceableDecision = (policyIntent, safeDefault, capabilities) => {
+        if (policyIntent === "allow") {
+          return { finalDecision: "allow", fallbackReason: null };
+        }
+        if (policyIntent === "transform") {
+          if (capabilities.canTransform) return { finalDecision: "transform", fallbackReason: null };
+          if (capabilities.canBlock) return { finalDecision: "block", fallbackReason: "Transform is unavailable; block is the safe enforceable fallback." };
+          return { finalDecision: "coverage_gap", fallbackReason: "This integration cannot enforce the required transform or a safe block." };
+        }
+        if (policyIntent === "block") {
+          if (capabilities.canBlock) return { finalDecision: "block", fallbackReason: null };
+          return { finalDecision: "coverage_gap", fallbackReason: "Policy requires block, but this integration cannot block. The decision is rejected—not weakened to allow." };
+        }
+        if (policyIntent === "review") {
+          if (capabilities.canReviewInteractively) return { finalDecision: "review", fallbackReason: null };
+          if (safeDefault === "transform" && capabilities.canTransform) {
+            return { finalDecision: "transform", fallbackReason: "Interactive review is unavailable; policy's safe default is transform." };
+          }
+          if (capabilities.canBlock) {
+            return { finalDecision: "block", fallbackReason: "Interactive review and the preferred transform are unavailable; block is the remaining safe fallback." };
+          }
+          return { finalDecision: "coverage_gap", fallbackReason: "Interactive review is unavailable and no safe default can be enforced. The decision is rejected—not weakened to allow." };
+        }
+        return { finalDecision: "coverage_gap", fallbackReason: "Unknown policy decision." };
+      };
+
+      const applyReplacements = (text, findings) => {
+        const spans = [];
+        const seen = new Set();
+        for (const finding of findings) {
+          const key = `${finding.start}:${finding.end}`;
+          if (!seen.has(key) && finding.replacement) {
+            seen.add(key);
+            spans.push(finding);
+          }
+        }
+        spans.sort((a, b) => b.start - a.start);
+        return spans.reduce(
+          (result, finding) => result.slice(0, finding.start) + finding.replacement + result.slice(finding.end),
+          text
+        );
+      };
+
+      const highestRisk = (findings) => {
+        const order = { green: 0, yellow: 1, orange: 2, red: 3 };
+        return findings.reduce((highest, finding) => order[finding.riskTier] > order[highest] ? finding.riskTier : highest, "green");
+      };
+
+      const unique = (items) => [...new Set(items)];
+
+      const makeEvidence = (state) => {
+        const number = state.events.length + 1;
+        const event = {
+          id: `SG-PROT-${String(number).padStart(3, "0")}`,
+          integrationId: "synthetic-copilot-adapter",
+          integrationVersion: "prototype-only",
+          sessionIdHash: "session_demo_7c91",
+          stage: state.checkpoint,
+          destinationClass: "external_ai",
+          decision: state.finalDecision,
+          categories: unique(state.findings.map((finding) => finding.category)),
+          findingCount: state.findings.length,
+          riskTier: highestRisk(state.findings),
+          policyRuleIds: unique(state.findings.map((finding) => finding.policyRuleId)),
+          durationMs: 7 + number
+        };
+        const receipt = `${CHECKPOINTS[state.checkpoint]} · ${state.finalDecision.replace("_", " ")} · ${event.findingCount} finding${event.findingCount === 1 ? "" : "s"} · ${event.riskTier} · ${event.id}`;
+        return { event, receipt };
+      };
+
+      const noteContradiction = (state, condition) => ({
+        ...state.validation,
+        contradictionFound: state.validation.contradictionFound || condition
+      });
+
+      const stageScenario = (state, scenarioId) => {
+        const scenario = SCENARIOS[scenarioId];
+        if (!scenario) return { ...state, lastAction: "Unknown prototype situation; state was not changed." };
+        const profile = CAPABILITY_PROFILES[scenario.capabilityProfile];
+        return {
+          ...initialState(),
+          revision: state.revision + 1,
+          phase: "staged",
+          scenarioId,
+          checkpoint: scenario.checkpoint,
+          targetKind: scenario.targetKind,
+          source: scenario.source,
+          input: scenario.content,
+          capabilities: clone(profile),
+          executionStatus: scenario.executionStatus,
+          events: state.events,
+          validation: state.validation,
+          lastAction: `Staged: ${scenario.label}. Nothing has crossed the boundary.`
+        };
+      };
+
+      const reducer = (state, action) => {
+        if (!state) state = initialState();
+        if (!action || !action.type) return state;
+
+        if (action.type === "RESET") {
+          return {
+            ...initialState(),
+            revision: state.revision + 1,
+            events: state.events,
+            validation: state.validation,
+            lastAction: "Current interaction reset. Earlier metadata-only evidence remains visible."
+          };
+        }
+
+        if (action.type === "RESET_ALL") return initialState();
+        if (action.type === "STAGE_SCENARIO") return stageScenario(state, action.scenarioId);
+
+        if (action.type === "SET_CAPABILITY_PROFILE") {
+          if (!state.scenarioId || !CAPABILITY_PROFILES[action.profileId]) {
+            return { ...state, revision: state.revision + 1, lastAction: "Stage a situation before changing its integration capabilities." };
+          }
+          return {
+            ...state,
+            revision: state.revision + 1,
+            phase: "staged",
+            findings: [],
+            policyIntent: null,
+            finalDecision: null,
+            fallbackReason: null,
+            receipt: null,
+            currentEvent: null,
+            modelBoundOutput: null,
+            egressStatus: "nothing released",
+            capabilities: clone(CAPABILITY_PROFILES[action.profileId]),
+            lastAction: `Capability profile changed to ${CAPABILITY_PROFILES[action.profileId].label}. Re-inspection is required.`
+          };
+        }
+
+        if (action.type === "INSPECT") {
+          if (state.phase !== "staged") {
+            return { ...state, revision: state.revision + 1, lastAction: "Inspection is legal only after a situation is staged." };
+          }
+          const inspection = inspectScenario(state);
+          const selected = chooseEnforceableDecision(inspection.policyIntent, inspection.safeDefault, state.capabilities);
+          const unsafeAllow = inspection.policyIntent !== "allow" && selected.finalDecision === "allow";
+          return {
+            ...state,
+            revision: state.revision + 1,
+            phase: "inspected",
+            ...inspection,
+            ...selected,
+            validation: noteContradiction(state, unsafeAllow),
+            lastAction: selected.fallbackReason
+              ? `Policy requested ${inspection.policyIntent}; capability planning selected ${selected.finalDecision}.`
+              : `Inspection completed; policy and capabilities support ${selected.finalDecision}.`
+          };
+        }
+
+        if (action.type === "APPLY_DECISION") {
+          if (state.phase !== "inspected") {
+            return { ...state, revision: state.revision + 1, lastAction: "A decision can be applied only after inspection." };
+          }
+          if (state.finalDecision === "coverage_gap") {
+            return {
+              ...state,
+              revision: state.revision + 1,
+              phase: "coverage_gap",
+              egressStatus: "withheld; integration coverage is insufficient",
+              executionStatus: state.checkpoint === "action_before_execute" ? "not executed; enforcement unavailable" : state.executionStatus,
+              lastAction: "Incompatible integration capabilities were exposed as a Coverage Gap. Context was not released by this model."
+            };
+          }
+          if (state.finalDecision === "review") {
+            return {
+              ...state,
+              revision: state.revision + 1,
+              phase: "awaiting_review",
+              egressStatus: "paused for User Decision",
+              lastAction: "Review Gate opened. No context has crossed the boundary."
+            };
+          }
+
+          const modelBoundOutput = state.finalDecision === "transform"
+            ? applyReplacements(state.input, state.findings)
+            : state.finalDecision === "allow" ? state.input : null;
+          const evidence = makeEvidence(state);
+          return {
+            ...state,
+            revision: state.revision + 1,
+            phase: state.finalDecision === "block" ? "blocked" : "enforced",
+            modelBoundOutput,
+            executionStatus: state.finalDecision === "block" && state.checkpoint === "action_before_execute"
+              ? "denied before execution"
+              : state.executionStatus,
+            egressStatus: state.finalDecision === "block" ? "blocked" : "ready; not released yet",
+            receipt: evidence.receipt,
+            currentEvent: evidence.event,
+            events: [...state.events, evidence.event],
+            lastAction: state.finalDecision === "block"
+              ? "Block enforced before the proposed retrieval could execute."
+              : `${state.finalDecision === "transform" ? "Sanitization" : "Allow"} enforced. Output is ready but not yet released.`
+          };
+        }
+
+        if (action.type === "RESOLVE_REVIEW") {
+          if (state.phase !== "awaiting_review" || !["transform", "block"].includes(action.outcome)) {
+            return { ...state, revision: state.revision + 1, lastAction: "There is no open Review Gate for that User Decision." };
+          }
+          const canEnforce = action.outcome === "transform" ? state.capabilities.canTransform : state.capabilities.canBlock;
+          if (!canEnforce) {
+            return { ...state, revision: state.revision + 1, lastAction: `The integration cannot enforce the chosen ${action.outcome} outcome.` };
+          }
+          const decided = { ...state, phase: "inspected", finalDecision: action.outcome, fallbackReason: `User Decision at Review Gate: ${action.outcome}.` };
+          return reducer(decided, { type: "APPLY_DECISION" });
+        }
+
+        if (action.type === "CONTINUE_FLOW") {
+          if (state.phase === "blocked") {
+            const validated = state.scenarioId === "envRetrieval" && state.executionStatus === "denied before execution";
+            return {
+              ...state,
+              revision: state.revision + 1,
+              validation: {
+                ...state.validation,
+                restrictedRetrievalBlocked: state.validation.restrictedRetrievalBlocked || validated
+              },
+              lastAction: "Continuation rejected: the restricted retrieval remains unexecuted and no result exists to expose."
+            };
+          }
+          if (state.phase !== "enforced") {
+            return { ...state, revision: state.revision + 1, lastAction: "Nothing can continue until an allow or transform decision is enforced." };
+          }
+
+          const output = state.modelBoundOutput || "";
+          const promptSafe = state.scenarioId === "promptCredential"
+            && !output.includes("sk-test-shadowguard-")
+            && output.includes("[SECRET_REDACTED]");
+          const personPlaceholders = output.match(/\[PERSON_[A-F0-9]{4}\]/g) || [];
+          const hostPlaceholders = output.match(/\[INTERNAL_HOST_[A-F0-9]{4}\]/g) || [];
+          const stable = state.scenarioId === "incidentResult"
+            && personPlaceholders.length === 2
+            && hostPlaceholders.length === 2
+            && new Set(personPlaceholders).size === 1
+            && new Set(hostPlaceholders).size === 1
+            && !output.includes("1234567890121")
+            && !output.includes("payments.synthetic-bank.invalid");
+          const fallbackSafe = state.scenarioId === "ambiguousIdentifier"
+            && state.policyIntent === "review"
+            && !state.capabilities.canReviewInteractively
+            && state.finalDecision !== "allow"
+            && !output.includes("INT-TEST-4821");
+
+          return {
+            ...state,
+            revision: state.revision + 1,
+            phase: "released",
+            egressStatus: "released to synthetic External AI",
+            validation: {
+              ...state.validation,
+              promptCredentialSanitized: state.validation.promptCredentialSanitized || promptSafe,
+              stableResultPlaceholders: state.validation.stableResultPlaceholders || stable,
+              reviewDidNotDowngradeToAllow: state.validation.reviewDidNotDowngradeToAllow || fallbackSafe,
+              contradictionFound: state.validation.contradictionFound ||
+                (state.finalDecision === "transform" && state.findings.some((f) => f.replacement && output.includes(f.value)))
+            },
+            lastAction: "Protected Model-Bound Context crossed the synthetic boundary. Validation claims were recalculated from the released output."
+          };
+        }
+
+        return { ...state, revision: state.revision + 1, lastAction: `Unknown action ${action.type}; state was not changed.` };
+      };
+
+      return Object.freeze({
+        initialState,
+        reducer,
+        checkpoints: CHECKPOINTS,
+        scenarios: SCENARIOS,
+        capabilityProfiles: CAPABILITY_PROFILES,
+        walkthroughs: WALKTHROUGHS
+      });
+    })();
+  </script>
+
+  <!-- THROWAWAY DOM SHELL: rendering and click wiring only. -->
+  <script>
+    (() => {
+      "use strict";
+
+      const Model = GuardrailDecisionModel;
+      let state = Model.initialState();
+      let activeWalkthrough = "prompt";
+      const walkthroughProgress = Object.fromEntries(Object.keys(Model.walkthroughs).map((id) => [id, 0]));
+
+      const escapeHtml = (value) => String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+      const pill = (value) => value
+        ? `<span class="pill ${escapeHtml(value)}">${escapeHtml(value.replaceAll("_", " "))}</span>`
+        : `<span class="pill">not decided</span>`;
+
+      const dispatch = (action) => {
+        state = Model.reducer(state, action);
+        render();
+      };
+
+      const validationItem = (label, value) => `
+        <div class="metric">
+          <strong>${escapeHtml(label)}</strong>
+          <span class="${value ? "pass" : "pending"}">${value ? "Validated" : "Not run yet"}</span>
+        </div>`;
+
+      const renderValidation = () => {
+        const checks = state.validation;
+        const completed = [
+          checks.promptCredentialSanitized,
+          checks.stableResultPlaceholders,
+          checks.restrictedRetrievalBlocked,
+          checks.reviewDidNotDowngradeToAllow
+        ].filter(Boolean).length;
+        const headline = checks.contradictionFound
+          ? "A contradiction was exposed"
+          : completed === 4 ? "Coherent across all four probes" : `${completed} of 4 probes validated`;
+        document.querySelector("#validation-strip").innerHTML = `
+          <div class="status-lead">
+            <strong>${headline}</strong>
+            <span class="${checks.contradictionFound ? "fail" : completed === 4 ? "pass" : "pending"}">
+              ${checks.contradictionFound ? "Inspect the current state before trusting the model." : completed === 4 ? "No unsafe allow or broken transition observed." : "Complete the guided walkthroughs to answer the question."}
+            </span>
+          </div>
+          ${validationItem("Prompt credential", checks.promptCredentialSanitized)}
+          ${validationItem("Stable placeholders", checks.stableResultPlaceholders)}
+          ${validationItem("Pre-execution block", checks.restrictedRetrievalBlocked)}
+          ${validationItem("Review fallback", checks.reviewDidNotDowngradeToAllow)}
+        `;
+      };
+
+      const renderFindings = () => {
+        if (!state.findings.length) return `<p class="empty">No findings yet.</p>`;
+        const grouped = Object.values(state.findings.reduce((groups, finding) => {
+          const key = `${finding.category}|${finding.replacement || "none"}`;
+          groups[key] ||= { ...finding, occurrences: 0 };
+          groups[key].occurrences += 1;
+          return groups;
+        }, {}));
+        return `<div class="findings">${grouped.map((finding) => `
+          <div class="finding">
+            <div>
+              <strong>${escapeHtml(finding.category.replaceAll("_", " "))}</strong>
+              <small>${escapeHtml(finding.policyRuleId)} · ${finding.confidence} confidence · ${finding.occurrences} occurrence${finding.occurrences === 1 ? "" : "s"}</small>
+              ${finding.replacement ? `<small>Replacement: ${escapeHtml(finding.replacement)}</small>` : ""}
+            </div>
+            ${pill(finding.riskTier)}
+          </div>`).join("")}</div>`;
+      };
+
+      const capabilityBox = (key, label) => {
+        const enabled = state.capabilities?.[key];
+        return `<div class="capability ${enabled ? "yes" : "no"}">${enabled ? "Can" : "Cannot"} ${escapeHtml(label)}</div>`;
+      };
+
+      const renderState = () => {
+        const checkpoint = state.checkpoint ? Model.checkpoints[state.checkpoint] : "None staged";
+        const changedClass = state.phase === "blocked" || state.phase === "coverage_gap" ? "danger" : state.phase === "awaiting_review" ? "blue" : "";
+        document.querySelector("#state-grid").innerHTML = `
+          <article class="card">
+            <h3>Interaction</h3>
+            <dl class="definition-grid">
+              <dt>Revision</dt><dd>${state.revision}</dd>
+              <dt>Phase</dt><dd>${pill(state.phase)}</dd>
+              <dt>Checkpoint</dt><dd>${escapeHtml(checkpoint)}${state.checkpoint ? ` <span class="pill">${escapeHtml(state.checkpoint)}</span>` : ""}</dd>
+              <dt>Inspection target</dt><dd>${escapeHtml(state.targetKind || "None")}</dd>
+              <dt>Source</dt><dd>${escapeHtml(state.source || "None")}</dd>
+              <dt>Execution</dt><dd>${escapeHtml(state.executionStatus)}</dd>
+              <dt>Context Egress</dt><dd>${escapeHtml(state.egressStatus)}</dd>
+            </dl>
+            <div class="notice ${changedClass}">${escapeHtml(state.lastAction)}</div>
+          </article>
+
+          <article class="card">
+            <h3>Integration capabilities</h3>
+            ${state.capabilities ? `
+              <strong>${escapeHtml(state.capabilities.label)}</strong>
+              <div class="capabilities">
+                ${capabilityBox("canTransform", "transform")}
+                ${capabilityBox("canBlock", "block")}
+                ${capabilityBox("canReviewInteractively", "pause for review")}
+              </div>
+              <dl class="definition-grid">
+                <dt>Policy intent</dt><dd>${pill(state.policyIntent)}</dd>
+                <dt>Safe default</dt><dd>${pill(state.safeDefault)}</dd>
+                <dt>Final decision</dt><dd>${pill(state.finalDecision)}</dd>
+                <dt>Fallback</dt><dd>${escapeHtml(state.fallbackReason || "None")}</dd>
+                <dt>Reason code</dt><dd>${escapeHtml(state.reasonCode || "None")}</dd>
+              </dl>` : `<p class="empty">Stage a situation to load its checkpoint capabilities.</p>`}
+          </article>
+
+          <article class="card">
+            <h3>Inspection findings</h3>
+            ${renderFindings()}
+          </article>
+
+          <article class="card">
+            <h3>Protection evidence</h3>
+            <dl class="definition-grid">
+              <dt>Receipt</dt><dd>${escapeHtml(state.receipt || "Not emitted")}</dd>
+              <dt>Event</dt><dd>${state.currentEvent ? escapeHtml(`${state.currentEvent.id} · ${state.currentEvent.decision} · ${state.currentEvent.riskTier}`) : "Not emitted"}</dd>
+              <dt>Content in event</dt><dd>${state.currentEvent ? "None" : "—"}</dd>
+              <dt>Placeholder map in event</dt><dd>${state.currentEvent ? "None" : "—"}</dd>
+            </dl>
+          </article>
+
+          <article class="card wide">
+            <h3>Boundary comparison</h3>
+            <dl class="definition-grid">
+              <dt>Synthetic input inside Trusted Data Boundary</dt>
+              <dd><div class="content-box ${state.input ? "" : "empty"}">${escapeHtml(state.input || "Nothing staged")}</div></dd>
+              <dt>Model-Bound Context</dt>
+              <dd><div class="content-box ${state.modelBoundOutput ? "" : "empty"}">${escapeHtml(state.modelBoundOutput || (state.phase === "blocked" ? "No output exists: retrieval was denied before execution." : "No content ready for the model"))}</div></dd>
+            </dl>
+          </article>
+        `;
+      };
+
+      const actionButton = (label, action, className = "button") => {
+        const encoded = escapeHtml(JSON.stringify(action));
+        return `<button class="${className}" type="button" data-action="${encoded}">${escapeHtml(label)}</button>`;
+      };
+
+      const renderFreePlay = () => {
+        document.querySelector("#free-play").innerHTML = `
+          <div class="action-group">
+            <h4>Stage a situation</h4>
+            <div class="actions">
+              ${Object.entries(Model.scenarios).map(([id, scenario]) => actionButton(scenario.label, { type: "STAGE_SCENARIO", scenarioId: id }, "button secondary")).join("")}
+            </div>
+          </div>
+          <div class="action-group">
+            <h4>Change what the integration can enforce</h4>
+            <div class="actions">
+              ${Object.entries(Model.capabilityProfiles).map(([id, profile]) => actionButton(profile.label, { type: "SET_CAPABILITY_PROFILE", profileId: id })).join("")}
+            </div>
+          </div>
+          <div class="action-group">
+            <h4>Move the current interaction</h4>
+            <div class="actions">
+              ${actionButton("Inspect", { type: "INSPECT" }, "button primary")}
+              ${actionButton("Apply decision", { type: "APPLY_DECISION" }, "button primary")}
+              ${actionButton("Continue flow", { type: "CONTINUE_FLOW" }, "button primary")}
+              ${actionButton("Review: transform", { type: "RESOLVE_REVIEW", outcome: "transform" })}
+              ${actionButton("Review: block", { type: "RESOLVE_REVIEW", outcome: "block" }, "button danger")}
+              ${actionButton("Reset interaction", { type: "RESET" })}
+              ${actionButton("Clear all evidence", { type: "RESET_ALL" }, "button danger")}
+            </div>
+          </div>
+        `;
+      };
+
+      const renderTabs = () => {
+        document.querySelector("#walkthrough-tabs").innerHTML = Object.entries(Model.walkthroughs).map(([id, walkthrough]) => `
+          <button class="tab" type="button" role="tab" data-walkthrough="${escapeHtml(id)}" aria-selected="${id === activeWalkthrough}">${escapeHtml(walkthrough.shortLabel)}</button>
+        `).join("");
+      };
+
+      const renderWalkthrough = () => {
+        const walkthrough = Model.walkthroughs[activeWalkthrough];
+        const progress = walkthroughProgress[activeWalkthrough];
+        document.querySelector("#walkthrough-panel").innerHTML = `
+          <h3>${escapeHtml(walkthrough.title)}</h3>
+          <p>${escapeHtml(walkthrough.description)}</p>
+          <div class="steps">
+            ${walkthrough.steps.map(([label, action], index) => `
+              <div class="step ${index < progress ? "done" : ""}">
+                <span>${escapeHtml(label)}</span>
+                <button class="button ${index === progress ? "primary" : ""}" type="button" data-walkthrough-step="${index}" ${index === progress ? "" : "disabled"} data-action="${escapeHtml(JSON.stringify(action))}">
+                  ${index < progress ? "Done" : index === progress ? "Do this" : "Next"}
+                </button>
+              </div>
+            `).join("")}
+          </div>
+          ${progress === walkthrough.steps.length ? `<div class="notice">Walkthrough complete. The live answer above was recalculated from the resulting state.</div>` : ""}
+        `;
+      };
+
+      const renderEvents = () => {
+        const eventLog = document.querySelector("#event-log");
+        if (!state.events.length) {
+          eventLog.innerHTML = `<p class="empty">No Protection Events yet. Apply a decision to create metadata-only evidence.</p>`;
+          return;
+        }
+        eventLog.innerHTML = `<ol class="event-list">${state.events.map((event, index) => `
+          <li>
+            <time>Event ${index + 1}</time>
+            <span>${escapeHtml(Model.checkpoints[event.stage])} · ${event.categories.length ? escapeHtml(event.categories.join(", ").replaceAll("_", " ")) : "no category"} · ${event.findingCount} finding${event.findingCount === 1 ? "" : "s"}</span>
+            ${pill(event.decision)}
+          </li>
+        `).join("")}</ol>
+        <div class="notice">Storage check: ${state.events.some((event) => JSON.stringify(event).includes("SG_") || JSON.stringify(event).includes("sk-test") || JSON.stringify(event).includes("1234567890121")) ? "FAIL — content-like data found" : "PASS — no synthetic raw value or Canary appears in event metadata"}</div>`;
+      };
+
+      const render = () => {
+        renderValidation();
+        renderState();
+        renderFreePlay();
+        renderTabs();
+        renderWalkthrough();
+        renderEvents();
+      };
+
+      document.addEventListener("click", (event) => {
+        const tab = event.target.closest("[data-walkthrough]");
+        if (tab) {
+          activeWalkthrough = tab.dataset.walkthrough;
+          walkthroughProgress[activeWalkthrough] = 0;
+          dispatch({ type: "RESET" });
+          return;
+        }
+
+        const button = event.target.closest("[data-action]");
+        if (!button || button.disabled) return;
+        const action = JSON.parse(button.dataset.action);
+        const stepIndex = button.dataset.walkthroughStep;
+        dispatch(action);
+        if (stepIndex !== undefined && Number(stepIndex) === walkthroughProgress[activeWalkthrough]) {
+          walkthroughProgress[activeWalkthrough] += 1;
+          renderWalkthrough();
+        }
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

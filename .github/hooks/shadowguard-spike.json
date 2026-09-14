@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptTransformed": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": ["src/cli/shadowguard-hook.mjs", "userPromptTransformed"],
+        "timeoutSec": 2
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": ["src/cli/shadowguard-hook.mjs", "preToolUse"],
+        "timeoutSec": 2
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "exec": "node",
+        "args": ["src/cli/shadowguard-hook.mjs", "postToolUse"],
+        "timeoutSec": 2
+      }
+    ]
+  }
+}
